@@ -21,7 +21,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/v1/tickets")
+@RequestMapping({"/api/v1/tickets", "/api/v1/maintenance/tickets"})
 @Tag(name = "Maintenance", description = "Endpoints for maintenance work orders, technician assignment, and ticket workflows")
 public class MaintenanceController {
 
