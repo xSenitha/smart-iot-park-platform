@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "smartpark-sensor-simulator"
+version = "1.0.0"
+description = "Realistic IoT fleet telemetry simulator for Smart IoT Park Platform"
+readme = "README.md"
+authors = [{ name = "Senitha Gihen", email = "senithagihean@gmail.com" }]
+requires-python = ">=3.10"
+dependencies = [
+    "paho-mqtt>=2.0.0",
+    "urllib3>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "ruff>=0.3.0",
+]
