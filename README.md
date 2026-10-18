@@ -61,7 +61,7 @@ graph TD
 |---|---|---|---|---|
 | **Core API** | `services/core-api` | Java 21, Spring Boot 3, MySQL 8, Flyway, Spring Security 6 | `8081` | Relational domain entities, JWT RBAC, park/zone registry, alert management, maintenance work orders, and SSE real-time event streaming. |
 | **Ingestion Service** | `services/ingestion-service` | Java 21, Spring Boot 3, MongoDB 7, Paho MQTT | `8082` | High-throughput telemetry ingestion over MQTT QoS 1 and REST, range validation, device heartbeat sync, and historical time-series queries. |
-| **AI Engine** | `services/ai-engine` | Python 3.12, FastAPI, Scikit-Learn, PyMongo | `8000` | Machine learning forecasting (bin overflow EWMA, multivariate z-score anomaly detection, botanical irrigation optimization, scheduled batch inference). |
+| **AI Engine** | `services/ai-engine` | Python 3.12, FastAPI, Scikit-Learn, PyMongo | `8083` | Machine learning forecasting (bin overflow EWMA, multivariate z-score anomaly detection, botanical irrigation optimization, scheduled batch inference). |
 | **API Gateway** | `services/api-gateway` | Java 21, Spring Cloud Gateway (Netty) | `8080` | Unified edge entry point, JWT signature validation, token bucket rate limiting, and CORS routing. |
 | **Sensor Simulator** | `services/sensor-simulator` | Python 3.12, Eclipse Paho | N/A | Simulates 15 physical IoT devices (compact bins, agronomic soil probes, intelligent lighting) across 3 park zones with realistic diurnal curves and fault injection. |
 | **Admin Dashboard** | `frontend/dashboard` | React 18, TypeScript, Vite, Custom CSS Design System | `3000` | Interactive SVG park and zone spatial map, real-time telemetry curves, incident alert center, maintenance work orders Kanban desk, and role switcher. |
@@ -97,9 +97,16 @@ docker compose up -d --build
 - **Admin Dashboard**: [http://localhost:3000](http://localhost:3000)
 - **API Gateway**: [http://localhost:8080](http://localhost:8080)
 - **Core API Swagger UI**: [http://localhost:8081/swagger-ui.html](http://localhost:8081/swagger-ui.html)
-- **AI Engine Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
+- **AI Engine Docs**: [http://localhost:8083/docs](http://localhost:8083/docs)
 - **Grafana Observability**: [http://localhost:3001](http://localhost:3001) (`admin` / `admin`)
 - **Prometheus Metrics**: [http://localhost:9090](http://localhost:9090)
+
+### 4. Default Demonstration Credentials
+| Role | Username | Password | Permissions |
+|---|---|---|---|
+| **Administrator** | `admin` | `Admin123!` | Full municipal control (devices, zones, alerts, users, work orders) |
+| **City Planner** | `planner` | `Planner123!` | Zone management, environmental analytics, and predictive insights |
+| **Maintenance Crew** | `maintenance` | `Tech123!` | Field device telemetry, alert resolution, and work order Kanban |
 
 ---
 
