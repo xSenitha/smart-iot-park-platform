@@ -1,0 +1,35 @@
+# Docker Compose Development Overrides (Hot-Reloading)
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  core-api:
+    volumes:
+      - ./services/core-api/src:/app/src
+    environment:
+      SPRING_DEVTOOLS_RESTART_ENABLED: "true"
+
+  ingestion-service:
+    volumes:
+      - ./services/ingestion-service/src:/app/src
+    environment:
+      SPRING_DEVTOOLS_RESTART_ENABLED: "true"
+
+  ai-engine:
+    volumes:
+      - ./services/ai-engine/app:/app/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8083 --reload
+
+  sensor-simulator:
+    volumes:
+      - ./services/sensor-simulator/simulator:/app/simulator
+
+  frontend:
+    build:
+      context: ./frontend/dashboard
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./frontend/dashboard/src:/app/src
+      - ./frontend/dashboard/public:/app/public
+    ports:
+      - "3000:3000"
+    command: npm run dev -- --host 0.0.0.0 --port 3000
