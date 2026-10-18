@@ -1,0 +1,11 @@
+spring:
+  data:
+    mongodb:
+      uri: mongodb://${MONGO_USER:mongo_user}:${MONGO_PASSWORD:mongo_dev_pass}@${MONGO_HOST:mongodb}:${MONGO_PORT:27017}/${MONGO_DATABASE:smartpark_telemetry}?authSource=smartpark_telemetry
+
+smartpark:
+  mqtt:
+    broker-host: ${MQTT_BROKER_HOST:mosquitto}
+    broker-port: ${MQTT_BROKER_PORT:1883}
+  core-api:
+    url: ${CORE_API_URL:http://core-api:8081}
