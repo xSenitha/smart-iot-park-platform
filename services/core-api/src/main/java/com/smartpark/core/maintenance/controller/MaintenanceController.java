@@ -55,7 +55,7 @@ public class MaintenanceController {
             .body(ApiResponse.success("Maintenance ticket created successfully", created));
     }
 
-    @PATCH("/{id}/status")
+    @RequestMapping(value = "/{id}/status", method = {RequestMethod.PATCH, RequestMethod.PUT})
     @PreAuthorize("hasAnyRole('ADMIN', 'MAINTENANCE_CREW')")
     @Operation(summary = "Progress ticket lifecycle state (Admin or Maintenance Crew)")
     public ResponseEntity<ApiResponse<MaintenanceTicketDto>> updateTicketStatus(
@@ -65,7 +65,7 @@ public class MaintenanceController {
         return ResponseEntity.ok(ApiResponse.success("Ticket status updated", maintenanceService.updateTicketStatus(id, request)));
     }
 
-    @PATCH("/{id}/assign")
+    @RequestMapping(value = "/{id}/assign", method = {RequestMethod.PATCH, RequestMethod.PUT})
     @PreAuthorize("hasAnyRole('ADMIN', 'CITY_PLANNER', 'MAINTENANCE_CREW')")
     @Operation(summary = "Assign a ticket to a technician")
     public ResponseEntity<ApiResponse<MaintenanceTicketDto>> assignTicket(

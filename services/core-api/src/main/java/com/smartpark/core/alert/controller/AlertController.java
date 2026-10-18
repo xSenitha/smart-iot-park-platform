@@ -55,14 +55,14 @@ public class AlertController {
             .body(ApiResponse.success("Alert triggered successfully", created));
     }
 
-    @PATCH("/api/v1/alerts/{id}/acknowledge")
+    @RequestMapping(value = "/api/v1/alerts/{id}/acknowledge", method = {RequestMethod.PATCH, RequestMethod.PUT})
     @PreAuthorize("hasAnyRole('ADMIN', 'MAINTENANCE_CREW')")
     @Operation(summary = "Acknowledge an active alert (Admin or Maintenance Crew)")
     public ResponseEntity<ApiResponse<AlertDto>> acknowledgeAlert(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.success("Alert acknowledged", alertService.acknowledgeAlert(id)));
     }
 
-    @PATCH("/api/v1/alerts/{id}/resolve")
+    @RequestMapping(value = "/api/v1/alerts/{id}/resolve", method = {RequestMethod.PATCH, RequestMethod.PUT})
     @PreAuthorize("hasAnyRole('ADMIN', 'MAINTENANCE_CREW')")
     @Operation(summary = "Resolve an alert with resolution notes (Admin or Maintenance Crew)")
     public ResponseEntity<ApiResponse<AlertDto>> resolveAlert(

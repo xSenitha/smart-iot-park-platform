@@ -60,7 +60,7 @@ public class DeviceController {
             .body(ApiResponse.success("Device registered successfully", created));
     }
 
-    @PATCH("/{id}/status")
+    @PatchMapping("/{id}/status")
     @PreAuthorize("hasAnyRole('ADMIN', 'MAINTENANCE_CREW')")
     @Operation(summary = "Transition device operational status (Admin or Maintenance Crew)")
     public ResponseEntity<ApiResponse<DeviceDto>> updateDeviceStatus(
