@@ -1,30 +1,25 @@
-# Stage 1: Build
+# Multi-stage Dockerfile for API Gateway (Java 21)
 FROM eclipse-temurin:21-jdk-alpine AS builder
+WORKDIR /build
 
-WORKDIR /app
-
-COPY mvnw .
-COPY .mvn .mvn
-COPY pom.xml .
-
-RUN ./mvnw dependency:go-offline -B
+COPY pom.xml ./
+RUN apk add --no-cache maven && mvn dependency:go-offline -B || true
 
 COPY src ./src
-RUN ./mvnw clean package -DskipTests
+RUN mvn clean package -DskipTests -B
 
-# Stage 2: Runtime
-FROM eclipse-temurin:21-jre-alpine
-
+# Runtime Image
+FROM eclipse-temurin:21-jre-alpine AS runner
 WORKDIR /app
 
-RUN addgroup -S smartpark && adduser -S smartpark -G smartpark
-USER smartpark
+RUN addgroup -S spring && adduser -S spring -G spring
+USER spring:spring
 
-COPY --from=builder /app/target/*.jar app.jar
+COPY --from=builder /build/target/*.jar app.jar
 
 EXPOSE 8080
 
-HEALTHCHECK --interval=20s --timeout=5s --start-period=30s --retries=3 \
+HEALTHCHECK --interval=15s --timeout=5s --retries=3 --start-period=30s \
   CMD wget --quiet --tries=1 --spider http://localhost:8080/actuator/health || exit 1
 
 ENTRYPOINT ["java", "-Djava.security.egd=file:/dev/./urandom", "-jar", "app.jar"]
