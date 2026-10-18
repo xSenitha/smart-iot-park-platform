@@ -15,9 +15,9 @@ ON DUPLICATE KEY UPDATE name=VALUES(name);
 
 -- 2. Seed Users (BCrypt hashes for Admin123!, Planner123!, Tech123!)
 INSERT INTO users (id, username, email, password_hash, full_name, is_active, created_at, updated_at) VALUES
-(1, 'admin', 'senithagihean@gmail.com', '$2a$10$wUv376/c89n1Lp5lZ5/xve9Keqy7lP99qF.kglU6P5eB5K0WpW11O', 'Senitha Gihen', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(2, 'planner', 'planner@smartpark.local', '$2a$10$V08H.yY4Vj8xKkG9u3L49eaYF6pG9E6.Q6WqD1VzO1kP5eB5K0WpW', 'Urban Planner Jane', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-(3, 'maintenance', 'tech@smartpark.local', '$2a$10$1Y8j.xZ5Vj8xKkG9u3L49eaYF6pG9E6.Q6WqD1VzO1kP5eB5K0WpW', 'Technician Alex', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+(1, 'admin', 'senithagihean@gmail.com', '$2a$10$ZP9IZvG9lu7bHkT3bcU5f.16g0IQ64fLsxOClCm2bMEtKaHiwdyxi', 'Senitha Gihen', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(2, 'planner', 'planner@smartpark.local', '$2a$10$Aryzt4Zgt.SQhU2VORwDceijoXXFiM1rXP4f/i2Kot/H4PFjpf3jO', 'Urban Planner Jane', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(3, 'maintenance', 'tech@smartpark.local', '$2a$10$zVroNNH93ZCXgNc8DlbZN.XXiaD.lv/Vbf2eFwIquPYAFHjeR86T6', 'Technician Alex', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 ON DUPLICATE KEY UPDATE username=VALUES(username);
 
 -- 3. Seed User Roles Mapping
