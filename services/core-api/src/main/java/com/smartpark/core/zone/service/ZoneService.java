@@ -48,6 +48,12 @@ public class ZoneService {
             .toList();
     }
 
+    public List<ZoneDto> getAllZones() {
+        return zoneRepository.findAll().stream()
+            .map(ZoneDto::fromEntity)
+            .toList();
+    }
+
     public ZoneDto getZoneById(Long id) {
         Zone zone = findZoneEntity(id);
         return ZoneDto.fromEntity(zone);

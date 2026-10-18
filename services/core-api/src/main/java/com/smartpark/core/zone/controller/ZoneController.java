@@ -24,6 +24,12 @@ public class ZoneController {
         this.zoneService = zoneService;
     }
 
+    @GetMapping("/api/v1/zones")
+    @Operation(summary = "List all zones across all municipal parks")
+    public ResponseEntity<ApiResponse<List<ZoneDto>>> getAllZones() {
+        return ResponseEntity.ok(ApiResponse.success(zoneService.getAllZones()));
+    }
+
     @GetMapping("/api/v1/parks/{parkId}/zones")
     @Operation(summary = "List all zones belonging to a given park")
     public ResponseEntity<ApiResponse<List<ZoneDto>>> getZonesByPark(@PathVariable Long parkId) {
