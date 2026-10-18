@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "smartpark-ai-engine"
+version = "1.0.0"
+description = "AI predictive maintenance engine for Smart IoT Park Platform"
+readme = "README.md"
+authors = [{ name = "Senitha Gihen", email = "senithagihean@gmail.com" }]
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.111.0",
+    "uvicorn[standard]>=0.30.0",
+    "pydantic>=2.7.0",
+    "pymongo>=4.7.0",
+    "numpy>=1.26.0",
+    "scikit-learn>=1.4.0",
+    "apscheduler>=3.10.4",
+    "httpx>=0.27.0",
+    "prometheus-client>=0.20.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "ruff>=0.3.0",
+]
