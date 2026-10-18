@@ -1,0 +1,102 @@
+openapi: 3.0.3
+info:
+  title: Smart IoT Park Platform - Core API
+  description: Domain REST API for parks, zones, devices, alerts, maintenance work orders, and authentication.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080/api/v1
+    description: API Gateway Entry Point
+  - url: http://localhost:8081/api/v1
+    description: Direct Core API Service
+
+paths:
+  /auth/login:
+    post:
+      summary: Authenticate user and receive JWT bearer token
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username: { type: string, example: "admin" }
+                password: { type: string, example: "admin123" }
+      responses:
+        200:
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: { type: string }
+                  username: { type: string }
+                  role: { type: string }
+
+  /zones:
+    get:
+      summary: List all park zones with health scores and active sensor counts
+      tags: [Zones]
+      responses:
+        200:
+          description: List of zones
+
+  /devices:
+    get:
+      summary: List all registered IoT devices
+      tags: [Devices]
+      responses:
+        200:
+          description: List of devices
+
+  /alerts:
+    get:
+      summary: List incident alerts with optional severity and status filters
+      tags: [Alerts]
+      responses:
+        200:
+          description: Incident alert feed
+
+  /alerts/{id}/acknowledge:
+    put:
+      summary: Acknowledge an open incident alert
+      tags: [Alerts]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        200:
+          description: Alert acknowledged
+
+  /maintenance/tickets:
+    get:
+      summary: Retrieve maintenance work orders
+      tags: [Maintenance]
+      responses:
+        200:
+          description: List of work orders
+    post:
+      summary: Create new maintenance work order
+      tags: [Maintenance]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [parkId, zoneId, title]
+              properties:
+                parkId: { type: integer }
+                zoneId: { type: integer }
+                deviceId: { type: integer }
+                title: { type: string }
+                description: { type: string }
+                priority: { type: string, enum: [LOW, MEDIUM, HIGH, URGENT] }
+      responses:
+        201:
+          description: Ticket created
