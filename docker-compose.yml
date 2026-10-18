@@ -1,0 +1,253 @@
+services:
+  # ============================================================================
+  # 1. Relational Persistence: MySQL 8.0
+  # ============================================================================
+  mysql:
+    image: mysql:8.0
+    container_name: smartpark-mysql
+    restart: unless-stopped
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-smartpark_db}
+      MYSQL_USER: ${MYSQL_USER:-smartpark_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-smartpark_dev_pass}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-smartpark_root_dev_pass}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./infra/docker/mysql-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p${MYSQL_ROOT_PASSWORD:-smartpark_root_dev_pass} --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - smartpark-net
+
+  # ============================================================================
+  # 2. Time-Series Persistence: MongoDB 7.0
+  # ============================================================================
+  mongodb:
+    image: mongo:7.0
+    container_name: smartpark-mongodb
+    restart: unless-stopped
+    ports:
+      - "${MONGO_PORT:-27017}:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME:-mongo_admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:-mongo_root_pass}
+      MONGO_INITDB_DATABASE: ${MONGO_DATABASE:-smartpark_telemetry}
+    volumes:
+      - mongo_data:/data/db
+      - ./infra/docker/mongo-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "echo 'db.runCommand(\"ping\").ok' | mongosh localhost:27017/test --quiet"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - smartpark-net
+
+  # ============================================================================
+  # 3. IoT Message Broker: Eclipse Mosquitto (MQTT)
+  # ============================================================================
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    container_name: smartpark-mosquitto
+    restart: unless-stopped
+    ports:
+      - "${MQTT_BROKER_PORT:-1883}:1883"
+      - "9001:9001"
+    volumes:
+      - ./infra/docker/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - mosquitto_data:/mosquitto/data
+    networks:
+      - smartpark-net
+
+  # ============================================================================
+  # 4. Core API: Spring Boot 3 + Java 21
+  # ============================================================================
+  core-api:
+    build:
+      context: ./services/core-api
+      dockerfile: Dockerfile
+    container_name: smartpark-core-api
+    restart: unless-stopped
+    ports:
+      - "${CORE_API_PORT:-8081}:8081"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-smartpark_db}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-smartpark_user}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-smartpark_dev_pass}
+      JWT_SECRET: ${JWT_SECRET:-404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-86400000}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - smartpark-net
+
+  # ============================================================================
+  # 5. Ingestion Service: Spring Boot + Reactive MongoDB + MQTT
+  # ============================================================================
+  ingestion-service:
+    build:
+      context: ./services/ingestion-service
+      dockerfile: Dockerfile
+    container_name: smartpark-ingestion-service
+    restart: unless-stopped
+    ports:
+      - "${INGESTION_SERVICE_PORT:-8082}:8082"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATA_MONGODB_URI: mongodb://${MONGO_USER:-mongo_user}:${MONGO_PASSWORD:-mongo_dev_pass}@mongodb:27017/${MONGO_DATABASE:-smartpark_telemetry}?authSource=smartpark_telemetry
+      MQTT_BROKER_HOST: mosquitto
+      MQTT_BROKER_PORT: 1883
+      CORE_API_URL: http://core-api:8081
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      mosquitto:
+        condition: service_started
+      core-api:
+        condition: service_started
+    networks:
+      - smartpark-net
+
+  # ============================================================================
+  # 6. AI Engine: FastAPI + Python 3.12
+  # ============================================================================
+  ai-engine:
+    build:
+      context: ./services/ai-engine
+      dockerfile: Dockerfile
+    container_name: smartpark-ai-engine
+    restart: unless-stopped
+    ports:
+      - "${AI_ENGINE_PORT:-8083}:8083"
+    environment:
+      MONGO_URI: mongodb://${MONGO_USER:-mongo_user}:${MONGO_PASSWORD:-mongo_dev_pass}@mongodb:27017/${MONGO_DATABASE:-smartpark_telemetry}?authSource=smartpark_telemetry
+      MONGO_DB_NAME: ${MONGO_DATABASE:-smartpark_telemetry}
+      CORE_API_URL: http://core-api:8081
+      AI_PREDICTION_CRON_INTERVAL_MINUTES: ${AI_PREDICTION_CRON_INTERVAL_MINUTES:-5}
+      BIN_OVERFLOW_WARNING_HOURS: ${BIN_OVERFLOW_WARNING_HOURS:-3.0}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      core-api:
+        condition: service_started
+    networks:
+      - smartpark-net
+
+  # ============================================================================
+  # 7. Sensor Simulator: Python Realistic IoT Telemetry Generator
+  # ============================================================================
+  sensor-simulator:
+    build:
+      context: ./services/sensor-simulator
+      dockerfile: Dockerfile
+    container_name: smartpark-sensor-simulator
+    restart: unless-stopped
+    environment:
+      MQTT_BROKER_HOST: mosquitto
+      MQTT_BROKER_PORT: 1883
+      INGESTION_HTTP_URL: http://ingestion-service:8082/api/v1/telemetry
+      SIMULATOR_INTERVAL_SECONDS: ${SIMULATOR_INTERVAL_SECONDS:-10}
+      SIMULATOR_ANOMALY_RATE: ${SIMULATOR_ANOMALY_RATE:-0.08}
+    depends_on:
+      mosquitto:
+        condition: service_started
+      ingestion-service:
+        condition: service_started
+    networks:
+      - smartpark-net
+
+  # ============================================================================
+  # 8. API Gateway: Spring Cloud Gateway (Perimeter Entry Point)
+  # ============================================================================
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile
+    container_name: smartpark-api-gateway
+    restart: unless-stopped
+    ports:
+      - "${GATEWAY_PORT:-8080}:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      CORE_API_URL: http://core-api:8081
+      INGESTION_SERVICE_URL: http://ingestion-service:8082
+      AI_ENGINE_URL: http://ai-engine:8083
+      JWT_SECRET: ${JWT_SECRET:-404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+    depends_on:
+      core-api:
+        condition: service_started
+      ingestion-service:
+        condition: service_started
+      ai-engine:
+        condition: service_started
+    networks:
+      - smartpark-net
+
+  # ============================================================================
+  # 9. Frontend: React 18 + TypeScript + Vite Dashboard
+  # ============================================================================
+  frontend:
+    build:
+      context: ./frontend/dashboard
+      dockerfile: Dockerfile
+    container_name: smartpark-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    depends_on:
+      api-gateway:
+        condition: service_started
+    networks:
+      - smartpark-net
+
+  # ============================================================================
+  # 10. Observability: Prometheus & Grafana
+  # ============================================================================
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    container_name: smartpark-prometheus
+    restart: unless-stopped
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./infra/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    networks:
+      - smartpark-net
+
+  grafana:
+    image: grafana/grafana:10.4.0
+    container_name: smartpark-grafana
+    restart: unless-stopped
+    ports:
+      - "${GRAFANA_PORT:-3001}:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infra/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infra/monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+    depends_on:
+      - prometheus
+    networks:
+      - smartpark-net
+
+networks:
+  smartpark-net:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  mongo_data:
+  mosquitto_data:
+  grafana_data:
