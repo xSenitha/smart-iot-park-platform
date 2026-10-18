@@ -1,0 +1,78 @@
+openapi: 3.0.3
+info:
+  title: Smart IoT Park Platform - AI Engine
+  description: Machine learning predictive maintenance and statistical anomaly detection service.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080/api/v1
+    description: API Gateway AI Route
+  - url: http://localhost:8000/api/v1
+    description: Direct AI Engine Service
+
+paths:
+  /predict/bin-overflow:
+    post:
+      summary: Forecast hours remaining until bin reaches target fill capacity (default 90%)
+      tags: [Predictions]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                deviceId: { type: string, example: "DEV-BIN-0002" }
+                readings: { type: array, items: { type: object } }
+      responses:
+        200:
+          description: Overflow forecast with risk level and confidence score
+
+  /predict/anomaly:
+    post:
+      summary: Multivariate statistical anomaly detection (z-score, battery discharge, lux drift)
+      tags: [Predictions]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [deviceId]
+              properties:
+                deviceId: { type: string }
+                deviceType: { type: string }
+                readings: { type: array, items: { type: object } }
+      responses:
+        200:
+          description: Anomaly score, root cause, and recommended action
+
+  /predict/irrigation:
+    post:
+      summary: Optimize zone soil moisture and compute watering duration
+      tags: [Predictions]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [zoneId]
+              properties:
+                zoneId: { type: integer, example: 1 }
+                targetMoisture: { type: number, example: 45.0 }
+      responses:
+        200:
+          description: Irrigation urgency and schedule recommendation
+
+  /jobs/predict-batch:
+    post:
+      summary: Trigger batch prediction cycle across all 15 park devices
+      tags: [Batch Jobs]
+      responses:
+        200:
+          description: Batch execution summary with alerts and tickets created
+
+  /models:
+    get:
+      summary: List registered ML models, performance metrics (MAE, RMSE, F1), and training metadata
+      tags: [Model Catalog]
+      responses:
+        200:
+          description: Model registry list

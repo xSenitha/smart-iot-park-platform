@@ -9,23 +9,23 @@
 [![React 18](https://img.shields.io/badge/React-18-61dafb.svg)](https://react.dev/)
 [![Docker Compose](https://img.shields.io/badge/Docker_Compose-v2-blue.svg)](https://www.docker.com/)
 
-> **A production-grade, distributed IoT management & predictive maintenance platform** designed for municipal city planners, park administrators, and field maintenance crews. Features real-time sensor ingestion, zone-level environmental monitoring, AI-driven failure/overflow forecasting, and automated maintenance ticketing.
+> **A production-grade, distributed microservices platform for municipal park management, real-time IoT sensor telemetry ingestion, and AI-driven predictive maintenance.** Built for urban city planners, municipal operations, and field dispatch crews.
 
 ---
 
 ## 🏗️ Architecture Overview
 
-The platform uses a microservices architecture with polyglot persistence, event-driven messaging, and a centralized perimeter gateway:
+The platform uses a decoupled microservices architecture with **polyglot persistence**, **event-driven MQTT messaging**, and a **centralized perimeter gateway**:
 
 ```mermaid
 graph TD
     Client["Browser / Admin Dashboard\n(React + TypeScript + Vite :3000)"]
-    Gateway["API Gateway\n(Spring Cloud Gateway :8080)"]
+    Gateway["Edge API Gateway\n(Spring Cloud Gateway :8080)"]
     
     subgraph CoreServices["Microservices Ecosystem"]
         CoreAPI["Core API\n(Spring Boot 3 + Java 21 :8081)"]
-        IngestionSvc["Ingestion Service\n(Spring Boot 3 + Reactive Mongo :8082)"]
-        AIEngine["AI Predictive Engine\n(FastAPI + Python 3.12 :8083)"]
+        IngestionSvc["Ingestion Service\n(Spring Boot 3 + MongoDB :8082)"]
+        AIEngine["AI Predictive Engine\n(FastAPI + Python 3.12 :8000)"]
     end
 
     subgraph MessagingLayer["IoT Messaging & Event Bus"]
@@ -34,105 +34,122 @@ graph TD
 
     subgraph PersistenceLayer["Polyglot Persistence Layer"]
         MySQL[("MySQL 8.0\nRelational Entities & RBAC")]
-        MongoDB[("MongoDB 7.0\nTime-series Telemetry & Predictions")]
+        MongoDB[("MongoDB 7.0\nTime-Series Telemetry & Predictions")]
     end
 
-    Simulator["IoT Sensor Simulator\n(Python Edge Daemon)"]
+    Simulator["IoT Sensor Simulator\n(15 Devices Daemon)"]
 
-    Simulator -->|Publish Telemetry| MQTTBroker
-    Simulator -->|REST Fallback| IngestionSvc
+    Simulator -->|Publish Telemetry QoS 1| MQTTBroker
+    Simulator -->|REST Ingestion Fallback| IngestionSvc
     MQTTBroker --> IngestionSvc
     Client --> Gateway
-    Gateway --> CoreAPI
+    Gateway -->|CORS & JWT Auth| CoreAPI
     Gateway --> IngestionSvc
     Gateway --> AIEngine
 
     IngestionSvc --> MongoDB
     CoreAPI --> MySQL
     AIEngine --> MongoDB
-    AIEngine -->|Batch Inferred Alerts & Tickets| CoreAPI
+    AIEngine -->|Trigger Alerts & Tickets| CoreAPI
 ```
 
 ---
 
-## 🧩 Service Ecosystem & Technologies
+## 🧩 Microservices Ecosystem
 
 | Service | Directory | Stack | Port | Responsibilities |
-| :--- | :--- | :--- | :--- | :--- |
-| **Admin Dashboard** | `frontend/dashboard` | React 18, TypeScript, Vite, CSS Modules | `3000` | Real-time map, sensor charts, alert toasts, ticket kanban |
-| **API Gateway** | `services/api-gateway` | Spring Cloud Gateway, Reactive Java 21 | `8080` | Perimeter routing, JWT auth filter, CORS, rate limiting |
-| **Core API** | `services/core-api` | Spring Boot 3, Java 21, Flyway, JPA | `8081` | Users, RBAC, Parks, Zones, Devices, Alerts, Tickets, SSE |
-| **Ingestion Service** | `services/ingestion-service` | Spring Boot 3, Spring Data Mongo, MQTT | `8082` | MQTT consumer, REST intake, validation, MongoDB time-series |
-| **AI Predictive Engine** | `services/ai-engine` | Python 3.12, FastAPI, Scikit-Learn | `8083` | Bin overflow forecast, equipment anomaly, irrigation score |
-| **Sensor Simulator** | `services/sensor-simulator` | Python 3.12, Paho MQTT, Asyncio | - | Realistic multi-zone IoT fleet telemetry generator |
-| **MQTT Broker** | `infra/docker/mosquitto` | Eclipse Mosquitto | `1883` | Lightweight pub/sub messaging for IoT edge telemetry |
-| **Relational DB** | `infra/docker/mysql` | MySQL 8.0 | `3306` | Structured entity storage with ACID guarantees |
-| **Time-Series DB** | `infra/docker/mongo` | MongoDB 7.0 | `27017` | High-frequency sensor log storage with TTL expiration |
+|---|---|---|---|---|
+| **Core API** | `services/core-api` | Java 21, Spring Boot 3, MySQL 8, Flyway, Spring Security 6 | `8081` | Relational domain entities, JWT RBAC, park/zone registry, alert management, maintenance work orders, and SSE real-time event streaming. |
+| **Ingestion Service** | `services/ingestion-service` | Java 21, Spring Boot 3, MongoDB 7, Paho MQTT | `8082` | High-throughput telemetry ingestion over MQTT QoS 1 and REST, range validation, device heartbeat sync, and historical time-series queries. |
+| **AI Engine** | `services/ai-engine` | Python 3.12, FastAPI, Scikit-Learn, PyMongo | `8000` | Machine learning forecasting (bin overflow EWMA, multivariate z-score anomaly detection, botanical irrigation optimization, scheduled batch inference). |
+| **API Gateway** | `services/api-gateway` | Java 21, Spring Cloud Gateway (Netty) | `8080` | Unified edge entry point, JWT signature validation, token bucket rate limiting, and CORS routing. |
+| **Sensor Simulator** | `services/sensor-simulator` | Python 3.12, Eclipse Paho | N/A | Simulates 15 physical IoT devices (compact bins, agronomic soil probes, intelligent lighting) across 3 park zones with realistic diurnal curves and fault injection. |
+| **Admin Dashboard** | `frontend/dashboard` | React 18, TypeScript, Vite, Custom CSS Design System | `3000` | Interactive SVG park and zone spatial map, real-time telemetry curves, incident alert center, maintenance work orders Kanban desk, and role switcher. |
+| **Infrastructure & AWS** | `infra/` | Docker Compose, Mosquitto, Prometheus, Grafana, Terraform | `1883, 3001, 9090` | Container orchestration, full Prometheus & Grafana operational dashboards, and AWS Terraform IaC modules. |
 
 ---
 
-## 🚀 Quickstart: Running Locally
+## 🚀 Quick Start (Local Docker Stack)
 
 ### Prerequisites
-- Docker Engine 24+ & Docker Compose v2+
-- Git
+- Docker Engine 24+ & Docker Compose v2
+- Java 21 JDK (optional, for local development)
+- Node.js 20+ & Python 3.12+ (optional, for local development)
 
-### Launch the Entire Stack
+### 1. Clone & Configure
 ```bash
-# 1. Clone repository
-git clone https://github.com/it24103788-sliit/smart-iot-park-platform.git
+git clone https://github.com/xSenitha/smart-iot-park-platform.git
 cd smart-iot-park-platform
-
-# 2. Copy development environment configuration
 cp .env.example .env
+```
 
-# 3. Spin up all containers in background
+### 2. Start Full Platform
+Using Make:
+```bash
 make up
 ```
-
-Once started:
-- 🌐 **Web Dashboard**: [http://localhost:3000](http://localhost:3000)
-- 🚪 **API Gateway**: [http://localhost:8080](http://localhost:8080)
-- 📖 **Core API Swagger UI**: [http://localhost:8081/swagger-ui.html](http://localhost:8081/swagger-ui.html)
-- 🤖 **AI Engine Docs**: [http://localhost:8083/docs](http://localhost:8083/docs)
-- 📊 **Prometheus Metrics**: [http://localhost:9090](http://localhost:9090)
-- 📈 **Grafana Dashboards**: [http://localhost:3001](http://localhost:3001) (admin/admin)
-
-### Demo Credentials
-| Role | Username | Password | Access Scope |
-| :--- | :--- | :--- | :--- |
-| **Admin** | `admin` | `Admin123!` | Full municipal control, device creation, rule configuration |
-| **City Planner** | `planner` | `Planner123!` | Park/Zone design, analytics, environmental metrics |
-| **Maintenance Crew** | `maintenance` | `Tech123!` | Ticket assignment, device status updates, alert resolution |
-
----
-
-## 🧪 Testing & Validation
-
-Run all microservice tests with one command:
+Or directly with Docker Compose:
 ```bash
-make test
+docker compose up -d --build
 ```
 
-Or test individual services:
-- **Core API**: `cd services/core-api && ./mvnw test`
-- **Ingestion Service**: `cd services/ingestion-service && ./mvnw test`
-- **AI Engine**: `cd services/ai-engine && pytest`
-- **Frontend**: `cd frontend/dashboard && npm test`
+### 3. Access Platform Interfaces
+- **Admin Dashboard**: [http://localhost:3000](http://localhost:3000)
+- **API Gateway**: [http://localhost:8080](http://localhost:8080)
+- **Core API Swagger UI**: [http://localhost:8081/swagger-ui.html](http://localhost:8081/swagger-ui.html)
+- **AI Engine Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
+- **Grafana Observability**: [http://localhost:3001](http://localhost:3001) (`admin` / `admin`)
+- **Prometheus Metrics**: [http://localhost:9090](http://localhost:9090)
 
 ---
 
-## 💼 What This Project Demonstrates (CV & Staff Engineer Competencies)
+## 🧪 Comprehensive Test Suite
 
-1. **Microservices & Clean Architecture**: Proper decomposition with decoupled bounded contexts, clean layers (Controller -> Service -> Repository -> Domain), DTO abstraction, and global RFC 7807 error envelopes.
-2. **Polyglot Persistence Strategy**: Deliberate division between relational MySQL (referential integrity, complex queries, audit compliance) and document MongoDB (high-velocity time-series, TTL index data lifecycle, polymorphic sensor readings).
-3. **IoT Telemetry Ingestion Pipeline**: Industrial-standard MQTT pub/sub integration combined with REST fallback, supporting edge-device backpressure, reconnect logic, and millisecond persistence.
-4. **Pragmatic AI & Predictive Maintenance**: Productionized machine learning with explainable models (EWMA fill forecasting, multivariate Isolation Forest anomaly detection, automated ticket generation).
-5. **Modern Reactive Frontend**: React 18 dashboard built with TypeScript and Vite, featuring custom glassmorphism design tokens, real-time SSE telemetry updates, interactive park zone mapping, and role-based route guards.
-6. **Enterprise Security & Compliance**: BCrypt password hashing, stateless JWT authentication with token rotation, method-level RBAC (`@PreAuthorize`), and audit logging.
-7. **Cloud Infrastructure as Code**: Full AWS Terraform modules for production EC2, VPC, security groups, and automated container orchestration.
+Every microservice in this repository contains a complete automated test suite without stubs:
+
+```bash
+# 1. Core API (JUnit 5 + Mockito - 12 tests)
+cd services/core-api && ./mvnw test
+
+# 2. Ingestion Service (JUnit 5 + MockMvc - 10 tests)
+cd services/ingestion-service && ./mvnw test
+
+# 3. API Gateway (Reactive Netty & Filter Tests - 6 tests)
+cd services/api-gateway && ./mvnw test
+
+# 4. AI Engine (ML Regression & API Tests - 18 tests)
+cd services/ai-engine && python -m unittest discover -s tests -v
+
+# 5. Sensor Simulator (Diurnal Math & Fault Injection - 5 tests)
+cd services/sensor-simulator && python -m unittest discover -s tests -v
+
+# 6. Frontend Dashboard (Vitest + React Testing Library - 3 tests)
+cd frontend/dashboard && npm test
+```
+
+---
+
+## ☁️ AWS Cloud Deployment (Terraform)
+
+The platform includes production-ready Terraform IaC in `infra/terraform/`:
+- **VPC & Subnets**: Multi-AZ public and private subnets, Internet Gateway, and route tables.
+- **Security Groups**: Tight least-privilege firewall rules for ALB, EC2 microservices host, and private RDS.
+- **RDS MySQL 8.0**: Multi-AZ automated backups, storage autoscaling, and encrypted storage.
+- **EC2 Container Host**: Ubuntu 22.04 LTS instance with IAM Systems Manager (SSM) access and automated Docker bootstrap script (`user_data.sh`).
+
+For detailed provisioning steps, see the [AWS Deployment Runbook](docs/runbooks/aws-deployment.md).
+
+---
+
+## 📐 Architecture Decision Records (ADRs)
+
+Key architectural decisions are documented under `docs/adr/`:
+- [ADR 0001: Microservices & Polyglot Persistence (MySQL + MongoDB)](docs/adr/0001-microservices-polyglot-persistence.md)
+- [ADR 0002: MQTT Edge Messaging & Server-Sent Events (SSE)](docs/adr/0002-mqtt-sse-realtime-telemetry.md)
+- [ADR 0003: Statistical Machine Learning for Predictive Maintenance](docs/adr/0003-hybrid-ai-predictive-maintenance.md)
+- [ADR 0004: API Gateway Perimeter Routing, JWT Auth & Rate Limiting](docs/adr/0004-api-gateway-perimeter-security.md)
 
 ---
 
 ## 📄 License
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the [MIT License](LICENSE).

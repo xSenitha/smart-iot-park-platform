@@ -1,0 +1,57 @@
+openapi: 3.0.3
+info:
+  title: Smart IoT Park Platform - Telemetry Ingestion Service
+  description: High-throughput ingestion API and MongoDB time-series query interface.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080/api/v1/telemetry
+    description: API Gateway Ingestion Route
+  - url: http://localhost:8082/api/v1/telemetry
+    description: Direct Ingestion Service
+
+paths:
+  /:
+    post:
+      summary: Ingest a single device telemetry reading
+      tags: [Ingestion]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [deviceId, deviceType, parkId, zoneId, metrics]
+              properties:
+                deviceId: { type: string, example: "DEV-BIN-0001" }
+                deviceType: { type: string, enum: [BIN, SOIL, LIGHT] }
+                parkId: { type: integer, example: 1 }
+                zoneId: { type: integer, example: 1 }
+                timestamp: { type: string, format: date-time }
+                metrics: { type: object }
+      responses:
+        202:
+          description: Telemetry reading accepted
+
+  /batch:
+    post:
+      summary: Ingest an array of telemetry readings
+      tags: [Ingestion]
+      responses:
+        202:
+          description: Batch accepted
+
+  /history/{deviceId}:
+    get:
+      summary: Query recent time-series telemetry for a specific device
+      tags: [Telemetry Query]
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50 }
+      responses:
+        200:
+          description: Array of historical sensor readings
